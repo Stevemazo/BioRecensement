@@ -6,6 +6,7 @@ def get_connection():
         user="u3zvttr70dqoe1mn",
         password="u3zvttr70dqoe1mn",
         database="b5wukeymkwlavs8t0nmf",
-        port="3306"
+        port=3306
         
     )
+    
