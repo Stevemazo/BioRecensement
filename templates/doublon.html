@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Doublon détecté</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            margin-top: 50px;
+        }
+
+        img {
+            border: 3px solid red;
+            border-radius: 10px;
+            margin-top: 20px;
+            width: 300px;
+        }
+
+        .alert {
+            color: red;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        form {
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        a {
+            display: block;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #0066cc;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="alert">❌ Ce citoyen semble déjà être enregistré !</div>
+    <h3>{{ citoyen.nom }} {{ citoyen.postnom }} {{ citoyen.prenom }}</h3>
+    <img src="{{ url_for('static', filename='uploads/' + citoyen.photo) }}" alt="Photo du citoyen existant">
+
+    <form method="POST" action="{{ url_for('forcer_enregistrement') }}">
+        {% for key, value in citoyen.original_data.items() %}
+        <input type="hidden" name="{{ key }}" value="{{ value }}">
+        {% endfor %}
+        <button type="submit">✅ Forcer l'enregistrement</button>
+    </form>
+
+    <a href="{{ url_for('recensement') }}">⟵ Annuler et retourner au formulaire</a>
+</body>
+
+</html>

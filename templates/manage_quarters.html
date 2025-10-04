@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Gestion des quartiers</h2>
+
+    <!-- Formulaire d'ajout -->
+    {% if session.get('role') == 'admin' %}
+    <form action="{{ url_for('add_quarter') }}" method="POST" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="nom" class="form-control" placeholder="Nom du quartier" required>
+            <button type="submit" class="btn btn-success">Ajouter</button>
+        </div>
+    </form>
+    {% endif %}
+
+    <!-- Champ de recherche -->
+    <input type="text" id="searchInput" class="form-control mb-3" placeholder="Rechercher un quartier...">
+
+    <!-- Tableau -->
+    <table class="table table-bordered table-striped" id="quartersTable">
+        <thead class="table-dark">
+            <tr>
+                <th>Nom</th>
+                {% if session.get('role') == 'admin' %}
+                <th>Actions</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for quarter in quarters %}
+            <tr>
+                <td>{{ quarter.nom }}</td>
+                {% if session.get('role') == 'admin' %}
+                <td>
+                    <!-- Modifier -->
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                        data-bs-target="#editModal{{ quarter.id }}">Modifier</button>
+                    <!-- Supprimer -->
+                    <a href="{{ url_for('delete_quarter', quarter_id=quarter.id) }}" class="btn btn-sm btn-danger"
+                        onclick="return confirm('Supprimer ce quartier ?')">Supprimer</a>
+                </td>
+                {% endif %}
+            </tr>
+
+            <!-- Modal de modification -->
+            <div class="modal fade" id="editModal{{ quarter.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form action="{{ url_for('update_quarter', quarter_id=quarter.id) }}" method="POST">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Modifier le quartier</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="text" name="nom" class="form-control" value="{{ quarter.nom }}" required>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-success">Enregistrer</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Recherche dynamique -->
+<script>
+    document.getElementById('searchInput').addEventListener('keyup', function () {
+        const search = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#quartersTable tbody tr');
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(search) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}

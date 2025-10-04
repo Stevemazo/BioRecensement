@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center">Vérification d'un Citoyen</h2>
+
+    <div class="form-group" style="text-align: center;">
+        <label for="capture">Capture du visage (Webcam)</label><br>
+        <video id="video" width="640" height="480" autoplay></video><br><br>
+        <button type="button" class="btn btn-primary" id="captureBtn">Capturer le Visage</button>
+    </div>
+
+    <input type="hidden" id="imageBase64">
+
+    <!-- Loader -->
+    <div id="loader" class="mt-3" style="display: none;text-align: center;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+        <span class="ms-2">Vérification en cours...</span>
+    </div>
+
+    <div class="form-group mt-3" style="text-align: center;">
+        <button type="button" class="btn btn-success" id="verifyBtn">Vérifier</button>
+    </div>
+
+    <!-- Résultat de la vérification (caché au début) -->
+    <div id="result" class="mt-4" style="display: none;">
+        <h2
+            style="font-family: Georgia, 'Times New Roman', Times, serif;text-align: center;color: rgba(250, 17, 17, 0.918);">
+            RESULTATS DE LA VERIFICATION</h2>
+
+        <div id="citizenInfo" class="border border-primary rounded shadow-sm p-3" style="background-color: #e4e7e7;">
+            <div class="mb-3 p-3 border border-info rounded shadow-sm" style="background-color: white;">
+                <h5>Nom: <span id="nom"></span></h5>
+            </div>
+            <div class="mb-3 p-3 border border-info rounded shadow-sm" style="background-color: white;">
+                <h5>Postnom: <span id="postnom"></span></h5>
+            </div>
+            <div class="mb-3 p-3 border border-info rounded shadow-sm" style="background-color: white;">
+                <h5>Prénom: <span id="prenom"></span></h5>
+            </div>
+            <div class="mb-3 p-3 border border-info rounded shadow-sm" style="background-color: white;">
+                <h5>Sexe: <span id="sexe"></span></h5>
+            </div>
+            <div class="mb-3 p-3 border border-info rounded shadow-sm" style="background-color: white;">
+                <h5>Etat civil: <span id="etat_civil"></span></h5>
+            </div>
+            <div class="mb-3 p-3 border border-info rounded shadow-sm" style="background-color: white;">
+                <h5>Conjoint: <span id="conjoint"></span></h5>
+            </div>
+            <div class="mb-3 p-3 border border-info rounded shadow-sm" style="background-color: white;">
+                <h5>Adresse: <span id="adresse"></span></h5>
+            </div>
+            <div class="mb-3 p-3 border border-info rounded shadow-sm" style="background-color: white;">
+                <h5>Contact: <span id="contact"></span></h5>
+            </div>
+            <div class="mb-3 p-3 border border-info rounded shadow-sm" style="background-color: white;">
+                <h5>Village: <span id="village"></span></h5>
+            </div>
+            <div class="mb-3 p-3 border border-info rounded shadow-sm" style="background-color: white;">
+                <h5>Secteur: <span id="secteur"></span></h5>
+            </div>
+            <div class="mb-3 p-3 border border-info rounded shadow-sm" style="background-color: white;">
+                <h5>District: <span id="district"></span></h5>
+            </div>
+            <div class="mb-3 p-3 border border-info rounded shadow-sm" style="background-color: white;">
+                <h5>Province: <span id="province"></span></h5>
+            </div>
+            <div class="mb-3 p-3 border border-info rounded shadow-sm" style="background-color: white;">
+                <h5>Nom du père: <span id="nom_pere"></span></h5>
+            </div>
+            <div class="mb-3 p-3 border border-info rounded shadow-sm" style="background-color: white;">
+                <h5>Nom de la mère: <span id="nom_mere"></span></h5>
+            </div>
+            <div class="mb-3 p-3 border border-info rounded shadow-sm" style="background-color: white;">
+                <h5>Date de naissance: <span id="date_naissance"></span></h5>
+            </div>
+            <div class="mb-3 p-3 border border-info rounded shadow-sm" style="background-color: white;">
+                <h5>Age: <span id="age"></span> An(s)</h5>
+            </div>
+            <div class="mb-3 p-3 border border-info rounded shadow-sm" style="background-color: white;">
+                <h5>Photo:</h5>
+                <img id="photo" src="" alt="photo du citoyen" width="150" />
+            </div>
+        </div>
+
+        <div id="noMatch" style="display: none;color: red;font-weight: bolder;text-align: center;"
+            class="mb-3 p-3 border border-danger rounded shadow-sm">
+            <p>Aucune correspondance trouvée. Essayez de nouveau.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    const video = document.getElementById('video');
+    const captureBtn = document.getElementById('captureBtn');
+    const verifyBtn = document.getElementById('verifyBtn');
+    const imageBase64Input = document.getElementById('imageBase64');
+
+    // Démarrer la webcam
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then((stream) => {
+            video.srcObject = stream;
+        })
+        .catch((err) => {
+            console.log("Erreur d'accès à la webcam: ", err);
+        });
+
+    // Capturer l'image
+    captureBtn.addEventListener('click', function () {
+        const canvas = document.createElement('canvas');
+        canvas.width = 640;
+        canvas.height = 480;
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const imageBase64 = canvas.toDataURL('image/jpeg');
+        imageBase64Input.value = imageBase64;
+
+        alert('Visage capturé, vous pouvez maintenant vérifier.');
+    });
+
+    // Envoyer l'image au backend via AJAX
+    verifyBtn.addEventListener('click', function () {
+        const imageBase64 = imageBase64Input.value;
+        if (!imageBase64) {
+            alert("Veuillez d'abord capturer une image !");
+            return;
+        }
+
+        $('#loader').show();
+        $('#result').hide(); // Cacher le bloc résultat pendant le chargement
+        $('#citizenInfo').hide();
+        $('#noMatch').hide();
+
+        $.ajax({
+            url: '/verify',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ image_base64: imageBase64 }),
+            success: function (response) {
+                $('#loader').hide();
+
+                $('#result').show(); // Afficher le bloc résultat (dans tous les cas)
+
+                if (response.found) {
+                    $('#nom').text(response.nom);
+                    $('#postnom').text(response.postnom);
+                    $('#prenom').text(response.prenom);
+                    $('#sexe').text(response.sexe);
+                    $('#etat_civil').text(response.etat_civil);
+                    $('#conjoint').text(response.conjoint);
+                    $('#adresse').text(response.adresse);
+                    $('#contact').text(response.contact);
+                    $('#village').text(response.village);
+                    $('#secteur').text(response.secteur);
+                    $('#district').text(response.district);
+                    $('#province').text(response.province);
+                    $('#nom_pere').text(response.nom_pere);
+                    $('#nom_mere').text(response.nom_mere);
+                    $('#date_naissance').text(response.date_naissance);
+                    $('#age').text(response.age);
+                    $('#photo').attr('src', 'data:image/jpeg;base64,' + response.photo);
+
+                    $('#citizenInfo').show();
+                } else {
+                    $('#noMatch').show();
+                }
+            },
+            error: function () {
+                $('#loader').hide();
+                alert("Erreur lors de la vérification.");
+            }
+        });
+    });
+</script>
+{% endblock %}

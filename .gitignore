@@ -1,0 +1,82 @@
+# ================================
+# Environnements virtuels
+# ================================
+venv/
+.env/
+ENV/
+*.env
+
+# ================================
+# Python cache & build
+# ================================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# ================================
+# Bases de données locales
+# ================================
+*.db
+*.sqlite3
+
+# ================================
+# Fichiers de logs & debug
+# ================================
+*.log
+*.out
+*.bak
+
+# ================================
+# Jupyter / Notebooks / Checkpoints
+# ================================
+.ipynb_checkpoints/
+*.ipynb
+
+# ================================
+# Fichiers lourds ML (modèles, checkpoints)
+# ================================
+*.h5
+*.hdf5
+*.ckpt
+*.ckpt.*
+*.pkl
+*.joblib
+*.weights
+*.pb
+*.onnx
+
+# ================================
+# TensorFlow / Keras / PyTorch cache
+# ================================
+*.tfrecord
+*.pbtxt
+*.pbdata
+*.pt
+*.pth
+
+# ================================
+# Images ou datasets volumineux
+# ================================
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.tiff
+*.gif
+*.mp4
+*.avi
+*.mov
+*.zip
+*.tar
+*.gz
+*.rar
+
+# ================================
+# OS spécifiques
+# ================================
+.DS_Store
+Thumbs.db

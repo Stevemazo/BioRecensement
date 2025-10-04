@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Gestion des utilisateurs</h2>
+
+    <!-- Bouton vers la page d'inscription' -->
+    <div class="mb-3">
+        <a href="{{ url_for('register') }}" class="btn btn-primary">+ Nouvel utilisateur</a>
+    </div>
+
+    <input type="text" id="searchInput" class="form-control mb-3" placeholder="Rechercher par nom ou rôle...">
+
+    <table class="table table-bordered table-striped" id="usersTable">
+        <thead class="table-dark">
+            <tr>
+                <th>Nom</th>
+                <th>Rôle</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.name }}</td>
+                <td>{{ user.role }}</td>
+                <td>
+                    <!-- Bouton Modifier -->
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                        data-bs-target="#editModal{{ user.id }}">
+                        Modifier
+                    </button>
+
+                    <!-- Bouton Supprimer -->
+                    <a href="{{ url_for('delete_user', user_id=user.id) }}" class="btn btn-sm btn-danger"
+                        onclick="return confirm('Confirmer la suppression de {{ user.name }} ?')">Supprimer</a>
+                </td>
+            </tr>
+
+            <!-- Modale de modification -->
+            <div class="modal fade" id="editModal{{ user.id }}" tabindex="-1"
+                aria-labelledby="editModalLabel{{ user.id }}" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form action="{{ url_for('update_user', user_id=user.id) }}" method="POST">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Modifier l'utilisateur</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Fermer"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="name{{ user.id }}" class="form-label">Nom</label>
+                                    <input type="text" class="form-control" name="name" value="{{ user.name }}"
+                                        required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="role{{ user.id }}" class="form-label">Rôle</label>
+                                    <select name="role" class="form-control">
+                                        <option value="admin" {% if user.role=='admin' %}selected{% endif %}>
+                                            Administrateur</option>
+                                        <option value="agent" {% if user.role=='agent' %}selected{% endif %}>Agent
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-success">Enregistrer</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    document.getElementById('searchInput').addEventListener('keyup', function () {
+        const searchTerm = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#usersTable tbody tr');
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}

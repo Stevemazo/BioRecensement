@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h3 class="text-center">Profil Utilisateur de <strong>{{ user.name }}</strong></h3>
+    <p class="text-center text-muted">Rôle : <strong>{{ user.role }}</strong></p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <form method="POST" class="mt-4">
+        <div class="form-group">
+            <label for="name">Nom d'utilisateur</label>
+            <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="current_password">Ancien mot de passe</label>
+            <input type="password" class="form-control" id="current_password" name="current_password" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Nouveau mot de passe</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+        </div>
+
+        <div class="form-group">
+            <label for="confirm_password">Confirmer le nouveau mot de passe</label>
+            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-3">Mettre à jour</button>
+    </form>
+</div>
+{% endblock %}

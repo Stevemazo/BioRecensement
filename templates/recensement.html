@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center">Recensement des Citoyens</h2>
+
+    <form action="{{ url_for('recensement') }}" method="POST" id="recensement-form" enctype="multipart/form-data">
+        <div class="row">
+            <div class="form-group col-md-6">
+                <label for="nom">Nom</label>
+                <input type="text" class="form-control" id="nom" name="nom" required>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="postnom">Postnom</label>
+                <input type="text" class="form-control" id="postnom" name="postnom" required>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="prenom">Prénom</label>
+                <input type="text" class="form-control" id="prenom" name="prenom" required>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="nom_pere">Nom du père</label>
+                <input type="text" class="form-control" id="nom_pere" name="nom_pere" required>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="nom_mere">Nom de la mère</label>
+                <input type="text" class="form-control" id="nom_mere" name="nom_mere" required>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="date_naissance">Date de naissance</label>
+                <input type="date" class="form-control" id="date_naissance" name="date_naissance" required>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="sexe">Sexe</label>
+                <select class="form-control" id="sexe" name="sexe" required>
+                    <option value="" disabled selected>-- Sélectionner --</option>
+                    <option value="M">Masculin</option>
+                    <option value="F">Féminin</option>
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="etat_civil">État civil</label>
+                <select class="form-control" id="etat_civil" name="etat_civil" required>
+                    <option value="" disabled selected>-- Sélectionner --</option>
+                    <option value="Célibataire">Célibataire</option>
+                    <option value="Marié(e)">Marié(e)</option>
+                    <option value="Divorcé(e)">Divorcé(e)</option>
+                    <option value="Veuf(ve)">Veuf(ve)</option>
+                </select>
+            </div>
+            <div class="form-group col-md-6" id="conjoint-container" style="display: none;">
+                <label for="conjoint">Nom du conjoint</label>
+                <input type="text" class="form-control" id="conjoint" name="conjoint">
+            </div>
+
+            <!-- Nouveau groupe Adresse -->
+            <div class="form-group col-md-6">
+                <label for="avenue">Avenue</label>
+                <select class="form-control" id="avenue" name="avenue" required>
+                    <option value="" disabled selected>-- Sélectionner --</option>
+                    {% for avenue in avenues %}
+                    <option value="{{ avenue.nom }}">{{ avenue.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="numero">Numéro</label>
+                <input type="number" class="form-control" id="numero" name="numero" required>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="quartier">Quartier</label>
+                <select class="form-control" id="quartier" name="quartier" required>
+                    <option value="" disabled selected>-- Sélectionner --</option>
+                    {% for quartier in quartiers %}
+                    <option value="{{ quartier.nom }}">{{ quartier.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="commune">Commune</label>
+                <select class="form-control" id="commune" name="commune" required>
+                    <option value="N'sele" selected>N'sele</option>
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="ville">Ville</label>
+                <input type="text" class="form-control" id="ville" name="ville" value="Kinshasa" required>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="contact">Contact</label>
+                <input type="tel" class="form-control" id="contact" name="contact" required pattern="[0-9]{10,15}">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="village">Village</label>
+                <input type="text" class="form-control" id="village" name="village" required>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="secteur">Secteur</label>
+                <input type="text" class="form-control" id="secteur" name="secteur" required>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="district">District</label>
+                <input type="text" class="form-control" id="district" name="district" required>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="province">Province</label>
+                <input type="text" class="form-control" id="province" name="province" required>
+            </div>
+            <div class="form-group col-md-12">
+                <label for="observation">Observation</label>
+                <textarea class="form-control" id="observation" name="observation" rows="3"></textarea>
+            </div>
+        </div>
+
+        <!-- Section Webcam -->
+        <div class="form-group mt-3">
+            <label>Capture du visage</label><br>
+            <video id="video" width="640" height="480" autoplay style="border:1px solid #ccc;"></video><br>
+            <button type="button" class="btn btn-primary mt-2" id="captureBtn">Capturer le Visage</button>
+            <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+            <div id="preview" class="mt-2"></div>
+        </div>
+        <input type="hidden" name="image_base64" id="imageBase64">
+        <!-- Loader -->
+        <div id="loader" class="mt-3" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+            <span class="ms-2">Traitement en cours...</span>
+        </div>
+
+        <div class="form-group mt-3">
+            <button type="submit" class="btn btn-success" id="submitBtn" disabled>Enregistrer</button>
+        </div>
+    </form>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const imageBase64Input = document.getElementById('imageBase64');
+    const preview = document.getElementById('preview');
+    const submitBtn = document.getElementById('submitBtn');
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            video.srcObject = stream;
+        })
+        .catch(err => {
+            alert("Webcam inaccessible : " + err.message);
+        });
+
+    captureBtn.addEventListener('click', function () {
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageBase64 = canvas.toDataURL('image/jpeg', 0.9);  // meilleure qualité
+        imageBase64Input.value = imageBase64;
+        preview.innerHTML = `<a href="${imageBase64}" target="_blank">
+                                <img src="${imageBase64}" class="img-thumbnail" width="160"/>
+                             </a>`;
+        submitBtn.disabled = false;
+        alert("Visage capturé avec succès !");
+    });
+
+
+    submitBtn.addEventListener('click', function () {
+        // Afficher le loader
+        $('#loader').show();
+    });
+
+
+    $('#etat_civil').on('change', function () {
+        if ($(this).val() === 'Marié') {
+            $('#conjoint-container').show();
+            $('#conjoint').attr('required', true);
+        } else {
+            $('#conjoint-container').hide();
+            $('#conjoint').val('');
+            $('#conjoint').removeAttr('required');
+        }
+    });
+</script>
+{% endblock %}

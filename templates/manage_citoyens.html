@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Gestion des citoyens</h2>
+
+    <!-- Bouton vers la page de recensement -->
+    <div class="mb-3">
+        <a href="{{ url_for('recensement') }}" class="btn btn-primary">+ Nouveau citoyen</a>
+    </div>
+
+    <!-- Champ de recherche -->
+    <div class="mb-3">
+        <input type="text" id="recherche" class="form-control" placeholder="Rechercher un citoyen...">
+    </div>
+
+    <!-- Liste des citoyens -->
+    <table class="table table-bordered" id="tableCitoyens">
+        <thead class="table-light">
+            <tr>
+                <th>Photo</th>
+                <th>Nom complet</th>
+                <th>Sexe</th>
+                <th>État civil</th>
+                <th>Contact</th>
+                <th>Adresse</th>
+                <th>Village</th>
+                <th>Secteur</th>
+                <th>District</th>
+                <th>Province</th>
+                {% if session.get('role') == 'admin' %}
+                <th>Actions</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for citoyen in citoyens %}
+            <tr>
+                <td><img src="{{ url_for('uploaded_file', filename=citoyen.photo) }}" alt="Photo" width="250px"
+                        height="250px" class="img-thumbnail">
+                </td>
+                <td>{{ citoyen.nom }} {{ citoyen.postnom }} {{ citoyen.prenom }}</td>
+                <td>{{ citoyen.sexe }}</td>
+                <td>{{ citoyen.etat_civil }}</td>
+                <td>{{ citoyen.contact }}</td>
+                <td>{{ citoyen.adresse }}</td>
+                <td>{{ citoyen.village }}</td>
+                <td>{{ citoyen.secteur }}</td>
+                <td>{{ citoyen.district }}</td>
+                <td>{{ citoyen.province }}</td>
+                {% if session.get('role') == 'admin' %}
+                <td>
+                    <button class="btn btn-sm btn-info" data-bs-toggle="modal"
+                        data-bs-target="#modifierModal{{ citoyen.id }}">Modifier</button>
+                    <a href="{{ url_for('delete_citoyen', id=citoyen.id) }}" class="btn btn-sm btn-danger"
+                        onclick="return confirm('Supprimer ce citoyen ?')">Supprimer</a>
+                </td>
+                {% endif %}
+            </tr>
+
+            <!-- Modal de modification -->
+            <div class="modal fade" id="modifierModal{{ citoyen.id }}" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <form method="POST" action="{{ url_for('edit_citoyen', id=citoyen.id) }}">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Modifier citoyen</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body row g-3">
+                                <div class="col-md-4">
+                                    <label>Nom</label>
+                                    <input type="text" name="nom" value="{{ citoyen.nom }}" class="form-control"
+                                        required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>Postnom</label>
+                                    <input type="text" name="postnom" value="{{ citoyen.postnom }}" class="form-control"
+                                        required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>Prenom</label>
+                                    <input type="text" name="prenom" value="{{ citoyen.prenom }}" class="form-control"
+                                        required>
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label>Nom du père</label>
+                                    <input type="text" class="form-control" name="nom_pere"
+                                        value="{{ citoyen.nom_pere }}" required>
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label>Nom de la mère</label>
+                                    <input type="text" class="form-control" name="nom_mere"
+                                        value="{{ citoyen.nom_mere }}" required>
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label>Date de naissance</label>
+                                    <input type="date" class="form-control" name="date_naissance"
+                                        value="{{ citoyen.date_naissance }}" required>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label>Contact</label>
+                                    <input type="text" name="contact" value="{{ citoyen.contact }}"
+                                        class="form-control">
+                                </div>
+                                <div class="col-md-4">
+                                    <label>Sexe</label>
+                                    <select name="sexe" class="form-control">
+                                        <option value="M" {% if citoyen.sexe=='M' %}selected{% endif %}>Masculin
+                                        </option>
+                                        <option value="F" {% if citoyen.sexe=='F' %}selected{% endif %}>Féminin</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>Etat civil</label>
+                                    <select name="etat_civil" class="form-control">
+                                        <option value="Célibataire" {% if citoyen.etat_civil=='Célibataire' %}selected{%
+                                            endif %}>Célibataire</option>
+                                        <option value="Marié(e)" {% if citoyen.etat_civil=='Marié(e)' %}selected{% endif
+                                            %}>Marié(e)</option>
+                                        <option value="Divorcé(e)" {% if citoyen.etat_civil=='Divorcé(e)' %}selected{%
+                                            endif %}>Divorcé(e)</option>
+                                        <option value="Veuf(ve)" {% if citoyen.etat_civil=='Veuf(ve)' %}selected{% endif
+                                            %}>Veuf(ve)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Conjoint(e)</label>
+                                    <input type="text" name="conjoint" value="{{ citoyen.conjoint }}"
+                                        class="form-control">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label>Avenue</label>
+                                    <select class="form-control" id="avenue" name="avenue">
+                                        <option value="" disabled>-- Sélectionner avenue --</option>
+                                        {% for avenue in avenues %}
+                                        <option value="{{ avenue.nom }}" {% if citoyen.avenue==avenue.nom %}selected{%
+                                            endif %}>{{ avenue.nom }}</option>
+                                        {% endfor %}
+                                    </select>
+
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label>Numéro</label>
+                                    <input type="number" class="form-control" name="numero"
+                                        value="{{ citoyen.numero }}">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label>Quartier</label>
+                                    <select class="form-control" id="quartier" name="quartier">
+                                        <option value="" disabled>-- Sélectionner le quartier --</option>
+                                        {% for quartier in quartiers %}
+                                        <option value="{{ quartier.nom }}" {% if citoyen.quartier==quartier.nom
+                                            %}selected{% endif %}>{{ quartier.nom }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label>Commune</label>
+                                    <input type="text" class="form-control" id="commune" name="commune" readonly
+                                        value="N'sele" required>
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label>Ville</label>
+                                    <input type="text" class="form-control" id="ville" name="ville" value="Kinshasa"
+                                        required readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Adresse complète<template></template></label>
+                                    <input type="text" name="adresse" value="{{ citoyen.adresse }}" class="form-control"
+                                        readonly>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label>Village</label>
+                                    <input type="text" name="village" value="{{ citoyen.village }}"
+                                        class="form-control">
+                                </div>
+                                <div class="col-md-4">
+                                    <label>Secteur</label>
+                                    <input type="text" name="secteur" value="{{ citoyen.secteur }}"
+                                        class="form-control">
+                                </div>
+                                <div class="col-md-4">
+                                    <label>District</label>
+                                    <input type="text" name="district" value="{{ citoyen.district }}"
+                                        class="form-control">
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Province</label>
+                                    <input type="text" name="province" value="{{ citoyen.province }}"
+                                        class="form-control">
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Observation</label>
+                                    <input type="text" name="observation" value="{{ citoyen.observation }}"
+                                        class="form-control">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-success">Enregistrer</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Script de recherche dynamique -->
+<script>
+    document.getElementById('recherche').addEventListener('input', function () {
+        const filtre = this.value.toLowerCase();
+        const lignes = document.querySelectorAll('#tableCitoyens tbody tr');
+        lignes.forEach(ligne => {
+            const texte = ligne.textContent.toLowerCase();
+            ligne.style.display = texte.includes(filtre) ? '' : 'none';
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        function majAdresse(modal) {
+            const avenue = modal.querySelector('[name="avenue"]').value || '';
+            const numero = modal.querySelector('[name="numero"]').value || '';
+            const quartier = modal.querySelector('[name="quartier"]').value || '';
+            const commune = modal.querySelector('[name="commune"]').value || '';
+            const ville = modal.querySelector('[name="ville"]').value || '';
+            modal.querySelector('[name="adresse"]').value = `${avenue}, ${numero}/${quartier}/${commune}/${ville}`;
+        }
+
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.querySelectorAll('[name="avenue"], [name="numero"], [name="quartier"]').forEach(input => {
+                input.addEventListener('change', () => majAdresse(modal));
+            });
+        });
+    });
+
+</script>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Gestion des avenues</h2>
+
+    <!-- Formulaire d'ajout -->
+    {% if session.get('role') == 'admin' %}
+    <form action="{{ url_for('add_street') }}" method="POST" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="nom" class="form-control" placeholder="Nom de l'avenue" required>
+            <button type="submit" class="btn btn-success">Ajouter</button>
+        </div>
+    </form>
+    {% endif %}
+
+    <!-- Barre de recherche -->
+    <input type="text" id="searchInput" class="form-control mb-3" placeholder="Rechercher une avenue...">
+
+    <!-- Tableau des avenues -->
+    <table class="table table-bordered table-striped" id="streetsTable">
+        <thead class="table-dark">
+            <tr>
+                <th>Nom</th>
+                {% if session.get('role') == 'admin' %}
+                <th>Actions</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for street in streets %}
+            <tr>
+                <td>{{ street.nom }}</td>
+                {% if session.get('role') == 'admin' %}
+                <td>
+                    <!-- Bouton modifier -->
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                        data-bs-target="#editModal{{ street.id }}">Modifier</button>
+
+                    <!-- Bouton supprimer -->
+                    <a href="{{ url_for('delete_street', street_id=street.id) }}" class="btn btn-sm btn-danger"
+                        onclick="return confirm('Confirmer la suppression ?')">Supprimer</a>
+                </td>
+                {% endif %}
+            </tr>
+
+            <!-- Modale de modification -->
+            <div class="modal fade" id="editModal{{ street.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form action="{{ url_for('update_street', street_id=street.id) }}" method="POST">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Modifier l'avenue</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="text" name="nom" class="form-control" value="{{ street.nom }}" required>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-success">Enregistrer</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- JS de recherche -->
+<script>
+    document.getElementById('searchInput').addEventListener('keyup', function () {
+        const search = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#streetsTable tbody tr');
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(search) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}
