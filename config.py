@@ -1,15 +1,7 @@
 DB_CONFIG = {
-    'host': 'bjvb74nnosa1zevqpwuf-mysql.services.clever-cloud.com',
-    'user': 'uil0vd8bkjjojqek',
-    'password': 'Iru7niERRTD7MWBuL0R4',
-    'database': 'bjvb74nnosa1zevqpwuf',
+    'host': 'btz7zr3tt1erxfbygo4e-mysql.services.clever-cloud.com',
+    'user': 'uep6l1uhu56nkbi3',
+    'password': 'CNacQRq1VtTrNx01CoX6',
+    'database': 'btz7zr3tt1erxfbygo4e',
     'port': '3306'
 }
-
-
-
-
-
-
-
-
