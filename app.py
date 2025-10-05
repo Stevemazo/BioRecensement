@@ -6,7 +6,9 @@ import cv2
 import numpy as np
 import base64
 import mysql.connector
-from config import get_connection
+
+from config import DB_CONFIG
+
 from datetime import datetime
 from deepface import DeepFace
 from PIL import Image
@@ -16,6 +18,11 @@ from io import BytesIO
 
 app = Flask(__name__)
 app.secret_key = 'a4s4powerful'
+
+
+# Connexion à la base de données MySQL
+def connect_db():
+    return mysql.connector.connect(**DB_CONFIG)
 
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -51,7 +58,7 @@ def login():
         name = request.form['name']
         password = request.form['password']
 
-        conn = get_connection()
+        conn = connect_db()
         cursor = conn.cursor(dictionary=True)
         cursor.execute("SELECT * FROM users WHERE name = %s", (name,))
         user = cursor.fetchone()
@@ -81,7 +88,7 @@ def register():
 
         hashed_password = generate_password_hash(password)
 
-        conn = get_connection()
+        conn = connect_db()
         cursor = conn.cursor()
         cursor.execute("INSERT INTO users (name, password, role) VALUES (%s, %s, %s)",
                        (name, hashed_password, role))
@@ -100,7 +107,7 @@ def profil():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    conn = get_connection()
+    conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     user_id = session['user_id']
 
@@ -139,19 +146,17 @@ def dashboard():
     return render_template('dashboard.html')
 
 
-
-
 @app.route('/recensement', methods=['GET', 'POST'])
 def recensement():
     if request.method == 'GET':
-        conn = get_connection()
+        conn = connect_db()
         cursor = conn.cursor(dictionary=True)
         cursor.execute("SELECT nom FROM streets")
         avenues = cursor.fetchall()
         cursor.close()
         conn.close()
 
-        conn = get_connection()
+        conn = connect_db()
         cursor = conn.cursor(dictionary=True)
         cursor.execute("SELECT nom FROM quarters")
         quartiers = cursor.fetchall()
@@ -173,7 +178,7 @@ def recensement():
             return 'Aucun visage détecté ou embedding échoué', 400
 
         # 🔁 Détection de doublon par similarité
-        conn = get_connection()
+        conn = connect_db()
         cursor = conn.cursor(dictionary=True)
         cursor.execute("SELECT id, nom, postnom, prenom, photo_encodee FROM citoyens")
         citoyens = cursor.fetchall()
@@ -211,7 +216,7 @@ def recensement():
         ville = request.form['ville']
         adresse_complete = f"{avenue}, {numero}/{quartier}/{commune}/{ville}"
 
-        conn = get_connection()
+        conn = connect_db()
         cursor = conn.cursor()
         sql = """
             INSERT INTO citoyens (
@@ -259,21 +264,21 @@ def manage_citoyens():
     if not session.get('user_id'):
         return redirect(url_for('login'))
 
-    conn = get_connection()
+    conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM citoyens")
     citoyens = cursor.fetchall()
     cursor.close()
     conn.close()
 
-    conn = get_connection()
+    conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT nom FROM streets")
     avenues = cursor.fetchall()
     cursor.close()
     conn.close()
 
-    conn = get_connection()
+    conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT nom FROM quarters")
     quartiers = cursor.fetchall()
@@ -284,7 +289,7 @@ def manage_citoyens():
 
 @app.route('/delete_citoyen/<int:id>')
 def delete_citoyen(id):
-    conn = get_connection()
+    conn = connect_db()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM citoyens WHERE id=%s", (id,))
     conn.commit()
@@ -295,7 +300,7 @@ def delete_citoyen(id):
 
 @app.route('/edit_citoyen/<int:id>', methods=['GET', 'POST'])
 def edit_citoyen(id):
-    conn = get_connection()
+    conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     
     if request.method == 'POST':
@@ -375,7 +380,7 @@ def manage_users():
     if session.get('role') != 'admin':
         return redirect(url_for('login'))
 
-    conn = get_connection()
+    conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM users")
     users = cursor.fetchall()
@@ -392,7 +397,7 @@ def update_user(user_id):
     name = request.form['name']
     role = request.form['role']
 
-    conn = get_connection()
+    conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute('UPDATE users SET name = %s, role = %s WHERE id = %s', (name, role, user_id))
     conn.commit()
@@ -407,7 +412,7 @@ def delete_user(user_id):
     if session.get('role') != 'admin':
         return redirect(url_for('login'))
 
-    conn = get_connection()
+    conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute('DELETE FROM users WHERE id = %s', (user_id,))
     conn.commit()
@@ -422,7 +427,7 @@ def manage_street():
     if not session.get('user_id'):
         return redirect(url_for('login'))
 
-    conn = get_connection()
+    conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM streets")
     streets = cursor.fetchall()
@@ -433,7 +438,7 @@ def manage_street():
 @app.route('/add_street', methods=['POST'])
 def add_street():
     nom = request.form['nom']
-    conn = get_connection()
+    conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute('INSERT INTO streets (nom) VALUES (%s)', (nom,))
     conn.commit()
@@ -445,7 +450,7 @@ def add_street():
 @app.route('/update_street/<int:street_id>', methods=['POST'])
 def update_street(street_id):
     nom = request.form['nom']
-    conn = get_connection()
+    conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute('UPDATE streets SET nom = %s WHERE id = %s', (nom, street_id))
     conn.commit()
@@ -456,7 +461,7 @@ def update_street(street_id):
 
 @app.route('/delete_street/<int:street_id>')
 def delete_street(street_id):
-    conn = get_connection()
+    conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute('DELETE FROM streets WHERE id = %s', (street_id,))
     conn.commit()
@@ -470,7 +475,7 @@ def manage_quarters():
     if not session.get('user_id'):
         return redirect(url_for('login'))
 
-    conn = get_connection()
+    conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM quarters")
     quarters = cursor.fetchall()
@@ -481,7 +486,7 @@ def manage_quarters():
 @app.route('/add_quarter', methods=['POST'])
 def add_quarter():
     nom = request.form['nom']
-    conn = get_connection()
+    conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute('INSERT INTO quarters (nom) VALUES (%s)', (nom,))
     conn.commit()
@@ -493,7 +498,7 @@ def add_quarter():
 @app.route('/update_quarter/<int:quarter_id>', methods=['POST'])
 def update_quarter(quarter_id):
     nom = request.form['nom']
-    conn = get_connection()
+    conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute('UPDATE quarters SET nom = %s WHERE id = %s', (nom, quarter_id))
     conn.commit()
@@ -504,7 +509,7 @@ def update_quarter(quarter_id):
 
 @app.route('/delete_quarter/<int:quarter_id>')
 def delete_quarter(quarter_id):
-    conn = get_connection()
+    conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute('DELETE FROM quarters WHERE id = %s', (quarter_id,))
     conn.commit()
@@ -531,7 +536,7 @@ def verify():
     if input_embedding is None:
         return jsonify({'found': False})
 
-    conn = get_connection()
+    conn = connect_db()
     with conn.cursor(dictionary=True) as cursor:
         cursor.execute("SELECT * FROM citoyens")
         citoyens = cursor.fetchall()
