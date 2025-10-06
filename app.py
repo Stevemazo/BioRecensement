@@ -15,7 +15,6 @@ from PIL import Image
 from io import BytesIO
 
 
-
 app = Flask(__name__)
 app.secret_key = 'a4s4powerful'
 
@@ -24,29 +23,52 @@ app.secret_key = 'a4s4powerful'
 def connect_db():
     return mysql.connector.connect(**DB_CONFIG)
 
+# =======================
+# 📁 Dossier uploads
+# =======================
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Création du dossier uploads s’il n’existe pas
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
+# =======================
+# 🧠 Modèle DeepFace optimisé
+# =======================
+print("🔄 Chargement du modèle SFace...")
+model = DeepFace.build_model("SFace")
+print("✅ Modèle SFace chargé avec succès.")
+
+# =======================
+# 🧩 Fonctions utilitaires
+# =======================
 def base64_to_opencv(image_base64):
-    image_data = image_base64.split(',')[1]
-    image_bytes = base64.b64decode(image_data)
-    nparr = np.frombuffer(image_bytes, np.uint8)
-    image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    return image
+    """Convertit une image base64 en tableau OpenCV"""
+    try:
+        image_data = image_base64.split(',')[1]
+        image_bytes = base64.b64decode(image_data)
+        nparr = np.frombuffer(image_bytes, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        return image
+    except Exception as e:
+        print("Erreur conversion image:", e)
+        return None
+
 
 def extract_face_embedding(image):
+    """Extrait le vecteur facial avec SFace (modèle déjà chargé)"""
     try:
         result = DeepFace.represent(
-            image, model_name="Facenet", enforce_detection=False
+            img_path=image,
+            model_name="SFace",
+            model=model,
+            enforce_detection=False
         )[0]
         return np.array(result["embedding"], dtype=np.float32)
     except Exception as e:
         print("Erreur embedding :", str(e))
         return None
+
 
 @app.route('/')
 def home():
@@ -146,6 +168,9 @@ def dashboard():
     return render_template('dashboard.html')
 
 
+# -----------------------
+# 🧾 Recensement (avec détection faciale)
+# -----------------------
 @app.route('/recensement', methods=['GET', 'POST'])
 def recensement():
     if request.method == 'GET':
@@ -177,7 +202,7 @@ def recensement():
         if embedding is None:
             return 'Aucun visage détecté ou embedding échoué', 400
 
-        # 🔁 Détection de doublon par similarité
+        # Détection de doublon
         conn = connect_db()
         cursor = conn.cursor(dictionary=True)
         cursor.execute("SELECT id, nom, postnom, prenom, photo_encodee FROM citoyens")
@@ -189,26 +214,25 @@ def recensement():
             try:
                 stored_embedding = np.frombuffer(citoyen['photo_encodee'], dtype=np.float32)
                 similarity = np.linalg.norm(embedding - stored_embedding)
-                if similarity < 10:  # Seuil identique à /verify
-                    flash(f"⚠️ Doublon détecté : cette empreinte faciale a deja été enregistrée pour le citoyen : {citoyen['nom']} {citoyen['postnom']} {citoyen['prenom']}.", 'danger')
+                if similarity < 10:
+                    flash(f"⚠️ Doublon détecté pour {citoyen['nom']} {citoyen['postnom']} {citoyen['prenom']}.", 'danger')
                     return redirect(url_for('recensement'))
-
             except Exception as e:
                 print(f"Erreur vérification doublon ID {citoyen.get('id', '?')}: {str(e)}")
                 continue
 
-        # 📷 Sauvegarde de l’image
+        # Sauvegarde de l’image
         filename = f"face_{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
         file_path = os.path.join(UPLOAD_FOLDER, filename)
         cv2.imwrite(file_path, image)
 
+        # Enregistrement des données
         nom_pere = request.form['nom_pere']
         nom_mere = request.form['nom_mere']
         date_naissance = request.form['date_naissance']
         annee_naissance = datetime.strptime(date_naissance, '%Y-%m-%d').year
         annee_actuelle = datetime.now().year
         age = str(annee_actuelle - annee_naissance)
-
         avenue = request.form['avenue']
         numero = request.form['numero']
         quartier = request.form['quartier']
@@ -227,30 +251,16 @@ def recensement():
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         cursor.execute(sql, (
-            request.form['nom'],
-            request.form['postnom'],
-            request.form['prenom'],
-            request.form['sexe'],
-            request.form['etat_civil'],
-            request.form['conjoint'],
-            adresse_complete,
-            request.form['contact'],
-            request.form['village'],
-            request.form['secteur'],
-            request.form['district'],
-            request.form['province'],
-            filename,
-            embedding.tobytes(),
-            request.form['observation'],
-            nom_pere,
-            nom_mere,
-            date_naissance,
-            age
+            request.form['nom'], request.form['postnom'], request.form['prenom'],
+            request.form['sexe'], request.form['etat_civil'], request.form['conjoint'],
+            adresse_complete, request.form['contact'], request.form['village'],
+            request.form['secteur'], request.form['district'], request.form['province'],
+            filename, embedding.tobytes(), request.form['observation'],
+            nom_pere, nom_mere, date_naissance, age
         ))
         conn.commit()
         cursor.close()
         conn.close()
-
         flash('✅ Citoyen enregistré avec succès.')
         return redirect(url_for('recensement'))
 
@@ -526,13 +536,11 @@ def verify_form():
 def verify():
     data = request.get_json()
     image_base64 = data.get('image_base64')
-
     if not image_base64:
         return jsonify({'found': False})
 
     image = base64_to_opencv(image_base64)
     input_embedding = extract_face_embedding(image)
-
     if input_embedding is None:
         return jsonify({'found': False})
 
@@ -545,44 +553,47 @@ def verify():
     for citoyen in citoyens:
         try:
             stored_embedding = np.frombuffer(citoyen['photo_encodee'], dtype=np.float32)
+            similarity = np.linalg.norm(input_embedding - stored_embedding)
+            if similarity < 10:
+                photo_path = os.path.join(UPLOAD_FOLDER, citoyen['photo'])
+                photo_base64 = ""
+                if os.path.exists(photo_path):
+                    with open(photo_path, "rb") as f:
+                        photo_base64 = base64.b64encode(f.read()).decode('utf-8')
+                return jsonify({
+                    'found': True,
+                    'nom': citoyen['nom'],
+                    'postnom': citoyen['postnom'],
+                    'prenom': citoyen['prenom'],
+                    'sexe': citoyen['sexe'],
+                    'etat_civil': citoyen['etat_civil'],
+                    'conjoint': citoyen['conjoint'],
+                    'adresse': citoyen['adresse'],
+                    'contact': citoyen['contact'],
+                    'village': citoyen['village'],
+                    'secteur': citoyen['secteur'],
+                    'district': citoyen['district'],
+                    'province': citoyen['province'],
+                    'nom_pere': citoyen['nom_pere'],
+                    'nom_mere': citoyen['nom_mere'],
+                    'date_naissance': citoyen['date_naissance'],
+                    'age': citoyen['age'],
+                    'photo': photo_base64
+                })
         except Exception as e:
-            print(f"Erreur d'encodage pour l'ID {citoyen.get('id', '?')} : {e}")
+            print(f"Erreur d'encodage ID {citoyen.get('id', '?')}: {e}")
             continue
-
-        similarity = np.linalg.norm(input_embedding - stored_embedding)
-        if similarity < 10:  # Seuil ajustable
-            photo_path = os.path.join(UPLOAD_FOLDER, citoyen['photo'])
-            photo_base64 = ""
-            if os.path.exists(photo_path):
-                with open(photo_path, "rb") as f:
-                    photo_base64 = base64.b64encode(f.read()).decode('utf-8')
-
-            return jsonify({
-                'found': True,
-                'nom': citoyen['nom'],
-                'postnom': citoyen['postnom'],
-                'prenom': citoyen['prenom'],
-                'sexe': citoyen['sexe'],
-                'etat_civil': citoyen['etat_civil'],
-                'conjoint': citoyen['conjoint'],
-                'adresse': citoyen['adresse'],
-                'contact': citoyen['contact'],
-                'village': citoyen['village'],
-                'secteur': citoyen['secteur'],
-                'district': citoyen['district'],
-                'province': citoyen['province'],
-                'nom_pere': citoyen['nom_pere'],
-                'nom_mere': citoyen['nom_mere'],
-                'date_naissance': citoyen['date_naissance'],
-                'age': citoyen['age'],
-                'photo': photo_base64
-            })
 
     return jsonify({'found': False})
 
+
+# -----------------------
+# 📷 Uploads
+# -----------------------
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
